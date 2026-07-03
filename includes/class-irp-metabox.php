@@ -64,6 +64,18 @@ class IRP_Metabox {
 				'slider'        => __( 'اسلایدر', 'irp' ),
 				'grid'          => __( 'گرید/لیست', 'irp' ),
 				'ungroup'       => __( 'تفکیک گروه', 'irp' ),
+				'options'       => __( 'تنظیمات نمایش', 'irp' ),
+				'cardDir'       => __( 'چیدمان کارت:', 'irp' ),
+				'cardH'         => __( 'افقی (عکس کنار متن)', 'irp' ),
+				'cardV'         => __( 'عمودی (عکس بالای متن)', 'irp' ),
+				'listDir'       => __( 'جهت لیست:', 'irp' ),
+				'listH'         => __( 'افقی (کنار هم)', 'irp' ),
+				'listV'         => __( 'عمودی (زیر هم)', 'irp' ),
+				'columns'       => __( 'تعداد در هر ردیف:', 'irp' ),
+				'showImage'     => __( 'نمایش عکس', 'irp' ),
+				'showDesc'      => __( 'نمایش توضیح کوتاه', 'irp' ),
+				'showPrice'     => __( 'نمایش قیمت', 'irp' ),
+				'showButton'    => __( 'نمایش دکمه خرید', 'irp' ),
 				'empty'         => __( 'هنوز محصولی اضافه نشده است. از کادر بالا محصول جستجو و اضافه کنید.', 'irp' ),
 			),
 		) );
@@ -215,13 +227,24 @@ class IRP_Metabox {
 				$key = 'irp' . wp_generate_password( 6, false, false );
 			}
 
+			$card_dir = ( isset( $b['cardDir'] ) && 'v' === $b['cardDir'] ) ? 'v' : 'h';
+			$list_dir = ( isset( $b['listDir'] ) && 'v' === $b['listDir'] ) ? 'v' : 'h';
+			$columns  = isset( $b['columns'] ) ? min( 6, max( 1, absint( $b['columns'] ) ) ) : 2;
+
 			$clean[] = array(
-				'key'       => $key,
-				'type'      => $type,
-				'products'  => $products,
-				'layout'    => $layout,
-				'placement' => $placement,
-				'heading'   => $heading,
+				'key'        => $key,
+				'type'       => $type,
+				'products'   => $products,
+				'layout'     => $layout,
+				'placement'  => $placement,
+				'heading'    => $heading,
+				'cardDir'    => $card_dir,
+				'listDir'    => $list_dir,
+				'columns'    => $columns,
+				'showImage'  => array_key_exists( 'showImage', $b )  ? (bool) $b['showImage']  : true,
+				'showDesc'   => array_key_exists( 'showDesc', $b )   ? (bool) $b['showDesc']   : true,
+				'showPrice'  => array_key_exists( 'showPrice', $b )  ? (bool) $b['showPrice']  : true,
+				'showButton' => array_key_exists( 'showButton', $b ) ? (bool) $b['showButton'] : true,
 			);
 		}
 		return $clean;

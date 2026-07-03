@@ -11,6 +11,7 @@
   var cache = safeJSON(textOf("irp-initial-products"), {});
   var blocks = safeJSON(input.value, []);
   if (!Array.isArray(blocks)) { blocks = []; }
+  blocks = blocks.map(function (b) { return withDefaults(b); });
 
   var searchInput = root.querySelector(".irp-search__input");
   var resultsBox = root.querySelector(".irp-search__results");
@@ -35,6 +36,14 @@
   }
   function isUsed(id) { return blocks.some(function (b) { return b.products.indexOf(id) !== -1; }); }
   function pinfo(id) { return cache[id] || { title: "#" + id, thumb: "", price: "" }; }
+  function optionDefaults() {
+    return { cardDir: "h", listDir: "h", columns: 2, showImage: true, showDesc: true, showPrice: true, showButton: true };
+  }
+  function withDefaults(b) {
+    var d = optionDefaults();
+    for (var k in d) { if (!(k in b)) { b[k] = d[k]; } }
+    return b;
+  }
 
   // ---------- جستجو ----------
   searchInput.addEventListener("input", function () {
@@ -81,7 +90,7 @@
 
   function addSingle(id) {
     if (isUsed(id)) { return; }
-    blocks.push({ key: uid(), type: "single", products: [id], layout: "card", placement: "manual", heading: 0 });
+    blocks.push(withDefaults({ key: uid(), type: "single", products: [id], layout: "card", placement: "manual", heading: 0 }));
     render();
   }
 
@@ -98,7 +107,7 @@
       return true;
     });
     if (ids.length < 2) { render(); return; }
-    blocks.push({ key: uid(), type: "group", products: ids, layout: groupLayout.value || "slider", placement: "manual", heading: 0 });
+    blocks.push(withDefaults({ key: uid(), type: "group", products: ids, layout: groupLayout.value || "slider", placement: "manual", heading: 0 }));
     render();
   });
 
@@ -106,7 +115,7 @@
     var idx = blocks.findIndex(function (b) { return b.key === key; });
     if (idx === -1) { return; }
     var singles = blocks[idx].products.map(function (id) {
-      return { key: uid(), type: "single", products: [id], layout: "card", placement: "manual", heading: 0 };
+      return withDefaults({ key: uid(), type: "single", products: [id], layout: "card", placement: "manual", heading: 0 });
     });
     blocks.splice.apply(blocks, [idx, 1].concat(singles));
     render();
@@ -152,6 +161,37 @@
     "</div>";
   }
 
+  function toggle(b, key, label) {
+    return '<label class="irp-opt"><input type="checkbox" class="irp-toggle" data-key="' + b.key + '" data-opt="' + key + '"' + (b[key] ? " checked" : "") + "> " + esc(label) + "</label>";
+  }
+
+  function optionsRow(b) {
+    var html = '<div class="irp-opts"><div class="irp-opts__title">' + esc(i18n.options) + "</div>";
+    html += '<div class="irp-opts__grid">' +
+      toggle(b, "showImage", i18n.showImage) +
+      toggle(b, "showDesc", i18n.showDesc) +
+      toggle(b, "showPrice", i18n.showPrice) +
+      toggle(b, "showButton", i18n.showButton) + "</div>";
+    html += '<div class="irp-opts__row"><label class="irp-lbl">' + esc(i18n.cardDir) + "</label>" +
+      '<select class="irp-field irp-opt-select" data-key="' + b.key + '" data-opt="cardDir">' +
+        '<option value="h"' + (b.cardDir !== "v" ? " selected" : "") + ">" + esc(i18n.cardH) + "</option>" +
+        '<option value="v"' + (b.cardDir === "v" ? " selected" : "") + ">" + esc(i18n.cardV) + "</option>" +
+      "</select></div>";
+    if (b.type === "group" && b.layout === "grid") {
+      html += '<div class="irp-opts__row"><label class="irp-lbl">' + esc(i18n.listDir) + "</label>" +
+        '<select class="irp-field irp-opt-select" data-key="' + b.key + '" data-opt="listDir">' +
+          '<option value="h"' + (b.listDir !== "v" ? " selected" : "") + ">" + esc(i18n.listH) + "</option>" +
+          '<option value="v"' + (b.listDir === "v" ? " selected" : "") + ">" + esc(i18n.listV) + "</option>" +
+        "</select></div>";
+      if (b.listDir !== "v") {
+        html += '<div class="irp-opts__row"><label class="irp-lbl">' + esc(i18n.columns) + "</label>" +
+          '<input type="number" min="1" max="6" step="1" class="irp-field irp-cols" data-key="' + b.key + '" value="' + (parseInt(b.columns, 10) || 2) + '"></div>';
+      }
+    }
+    html += "</div>";
+    return html;
+  }
+
   function miniProduct(id, key, removable) {
     var p = pinfo(id);
     return '<div class="irp-mini">' +
@@ -189,6 +229,7 @@
       wrap.appendChild(body);
     }
     wrap.appendChild(node(placementRow(b)));
+    wrap.appendChild(node(optionsRow(b)));
     return wrap;
   }
 
@@ -206,9 +247,12 @@
     if (!key) { return; }
     var b = blocks.find(function (x) { return x.key === key; });
     if (!b) { return; }
-    if (t.classList.contains("irp-layout")) { b.layout = t.value; save(); }
+    if (t.classList.contains("irp-layout")) { b.layout = t.value; render(); }
     else if (t.classList.contains("irp-placement")) { b.placement = t.value; if (t.value === "manual") { b.heading = 0; } render(); }
     else if (t.classList.contains("irp-heading")) { b.heading = parseInt(t.value, 10) || 0; save(); }
+    else if (t.classList.contains("irp-toggle")) { b[t.getAttribute("data-opt")] = t.checked; save(); }
+    else if (t.classList.contains("irp-opt-select")) { b[t.getAttribute("data-opt")] = t.value; if (t.getAttribute("data-opt") === "listDir") { render(); } else { save(); } }
+    else if (t.classList.contains("irp-cols")) { b.columns = Math.min(6, Math.max(1, parseInt(t.value, 10) || 2)); save(); }
   });
 
   list.addEventListener("click", function (e) {

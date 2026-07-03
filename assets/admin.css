@@ -39,3 +39,10 @@
 .irp-lbl { font-size: 12px; color: #555; }
 .irp-shortcode { display: flex; align-items: center; gap: 6px; }
 .irp-shortcode code { background: #f3f3f7; padding: 4px 8px; border-radius: 6px; font-size: 12px; }
+
+.irp-opts { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ececf2; }
+.irp-opts__title { font-size: 11px; font-weight: 700; color: #6a6a76; margin-bottom: 6px; }
+.irp-opts__grid { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 4px; }
+.irp-opt { font-size: 12px; color: #444; display: flex; align-items: center; gap: 5px; }
+.irp-opts__row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.irp-cols { width: 72px; min-width: 0; padding: 4px 8px; border: 1px solid #dcdce3; border-radius: 6px; }
