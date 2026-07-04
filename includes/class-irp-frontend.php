@@ -118,22 +118,26 @@ class IRP_Frontend {
 	/** استخراج و نرمال‌سازی گزینه‌های نمایشی هر بلوک با مقادیر پیش‌فرض امن. */
 	private function block_opts( $block ) {
 		$b = wp_parse_args( is_array( $block ) ? $block : array(), array(
-			'cardDir'    => 'h',
-			'listDir'    => 'h',
-			'columns'    => 2,
-			'showImage'  => true,
-			'showDesc'   => true,
-			'showPrice'  => true,
-			'showButton' => true,
+			'cardDir'       => 'h',
+			'listDir'       => 'h',
+			'columns'       => 2,
+			'slidesDesktop' => 3,
+			'slidesMobile'  => 1,
+			'showImage'     => true,
+			'showDesc'      => true,
+			'showPrice'     => true,
+			'showButton'    => true,
 		) );
 		return array(
-			'cardDir'    => 'v' === $b['cardDir'] ? 'v' : 'h',
-			'listDir'    => 'v' === $b['listDir'] ? 'v' : 'h',
-			'columns'    => min( 6, max( 1, (int) $b['columns'] ) ),
-			'showImage'  => (bool) $b['showImage'],
-			'showDesc'   => (bool) $b['showDesc'],
-			'showPrice'  => (bool) $b['showPrice'],
-			'showButton' => (bool) $b['showButton'],
+			'cardDir'       => 'v' === $b['cardDir'] ? 'v' : 'h',
+			'listDir'       => 'v' === $b['listDir'] ? 'v' : 'h',
+			'columns'       => min( 6, max( 1, (int) $b['columns'] ) ),
+			'slidesDesktop' => min( 6, max( 1, (int) $b['slidesDesktop'] ) ),
+			'slidesMobile'  => min( 6, max( 1, (int) $b['slidesMobile'] ) ),
+			'showImage'     => (bool) $b['showImage'],
+			'showDesc'      => (bool) $b['showDesc'],
+			'showPrice'     => (bool) $b['showPrice'],
+			'showButton'    => (bool) $b['showButton'],
 		);
 	}
 
@@ -175,9 +179,10 @@ class IRP_Frontend {
 		if ( ! $slides ) {
 			return '';
 		}
-		$prev = esc_attr__( 'قبلی', 'irp' );
-		$next = esc_attr__( 'بعدی', 'irp' );
-		return '<div class="irp-wrap irp-group irp-slider" data-irp-slider>'
+		$prev  = esc_attr__( 'قبلی', 'irp' );
+		$next  = esc_attr__( 'بعدی', 'irp' );
+		$style = sprintf( '--irp-slides-d:%d;--irp-slides-m:%d', (int) $opts['slidesDesktop'], (int) $opts['slidesMobile'] );
+		return '<div class="irp-wrap irp-group irp-slider" data-irp-slider style="' . esc_attr( $style ) . '">'
 			. '<button type="button" class="irp-slider__nav irp-slider__prev" aria-label="' . $prev . '"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
 			. '<ul class="irp-slider__track">' . $slides . '</ul>'
 			. '<button type="button" class="irp-slider__nav irp-slider__next" aria-label="' . $next . '"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'

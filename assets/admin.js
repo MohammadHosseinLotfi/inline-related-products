@@ -37,7 +37,7 @@
   function isUsed(id) { return blocks.some(function (b) { return b.products.indexOf(id) !== -1; }); }
   function pinfo(id) { return cache[id] || { title: "#" + id, thumb: "", price: "" }; }
   function optionDefaults() {
-    return { cardDir: "h", listDir: "h", columns: 2, showImage: true, showDesc: true, showPrice: true, showButton: true };
+    return { cardDir: "h", listDir: "h", columns: 2, slidesDesktop: 3, slidesMobile: 1, showImage: true, showDesc: true, showPrice: true, showButton: true };
   }
   function withDefaults(b) {
     var d = optionDefaults();
@@ -188,6 +188,12 @@
           '<input type="number" min="1" max="6" step="1" class="irp-field irp-cols" data-key="' + b.key + '" value="' + (parseInt(b.columns, 10) || 2) + '"></div>';
       }
     }
+    if (b.type === "group" && b.layout === "slider") {
+      html += '<div class="irp-opts__row"><label class="irp-lbl">' + esc(i18n.slidesDesktop) + "</label>" +
+        '<input type="number" min="1" max="6" step="1" class="irp-field irp-slides" data-key="' + b.key + '" data-opt="slidesDesktop" value="' + (parseInt(b.slidesDesktop, 10) || 3) + '">' +
+        '<label class="irp-lbl">' + esc(i18n.slidesMobile) + "</label>" +
+        '<input type="number" min="1" max="6" step="1" class="irp-field irp-slides" data-key="' + b.key + '" data-opt="slidesMobile" value="' + (parseInt(b.slidesMobile, 10) || 1) + '"></div>';
+    }
     html += "</div>";
     return html;
   }
@@ -253,6 +259,7 @@
     else if (t.classList.contains("irp-toggle")) { b[t.getAttribute("data-opt")] = t.checked; save(); }
     else if (t.classList.contains("irp-opt-select")) { b[t.getAttribute("data-opt")] = t.value; if (t.getAttribute("data-opt") === "listDir") { render(); } else { save(); } }
     else if (t.classList.contains("irp-cols")) { b.columns = Math.min(6, Math.max(1, parseInt(t.value, 10) || 2)); save(); }
+    else if (t.classList.contains("irp-slides")) { var sk = t.getAttribute("data-opt"); b[sk] = Math.min(6, Math.max(1, parseInt(t.value, 10) || (sk === "slidesMobile" ? 1 : 3))); save(); }
   });
 
   list.addEventListener("click", function (e) {

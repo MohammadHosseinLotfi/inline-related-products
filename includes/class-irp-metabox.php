@@ -72,6 +72,8 @@ class IRP_Metabox {
 				'listH'         => __( 'افقی (کنار هم)', 'irp' ),
 				'listV'         => __( 'عمودی (زیر هم)', 'irp' ),
 				'columns'       => __( 'تعداد در هر ردیف:', 'irp' ),
+				'slidesDesktop' => __( 'تعداد کارت در دسکتاپ:', 'irp' ),
+				'slidesMobile'  => __( 'تعداد کارت در موبایل:', 'irp' ),
 				'showImage'     => __( 'نمایش عکس', 'irp' ),
 				'showDesc'      => __( 'نمایش توضیح کوتاه', 'irp' ),
 				'showPrice'     => __( 'نمایش قیمت', 'irp' ),
@@ -230,21 +232,25 @@ class IRP_Metabox {
 			$card_dir = ( isset( $b['cardDir'] ) && 'v' === $b['cardDir'] ) ? 'v' : 'h';
 			$list_dir = ( isset( $b['listDir'] ) && 'v' === $b['listDir'] ) ? 'v' : 'h';
 			$columns  = isset( $b['columns'] ) ? min( 6, max( 1, absint( $b['columns'] ) ) ) : 2;
+			$slides_d = isset( $b['slidesDesktop'] ) ? min( 6, max( 1, absint( $b['slidesDesktop'] ) ) ) : 3;
+			$slides_m = isset( $b['slidesMobile'] ) ? min( 6, max( 1, absint( $b['slidesMobile'] ) ) ) : 1;
 
 			$clean[] = array(
-				'key'        => $key,
-				'type'       => $type,
-				'products'   => $products,
-				'layout'     => $layout,
-				'placement'  => $placement,
-				'heading'    => $heading,
-				'cardDir'    => $card_dir,
-				'listDir'    => $list_dir,
-				'columns'    => $columns,
-				'showImage'  => array_key_exists( 'showImage', $b )  ? (bool) $b['showImage']  : true,
-				'showDesc'   => array_key_exists( 'showDesc', $b )   ? (bool) $b['showDesc']   : true,
-				'showPrice'  => array_key_exists( 'showPrice', $b )  ? (bool) $b['showPrice']  : true,
-				'showButton' => array_key_exists( 'showButton', $b ) ? (bool) $b['showButton'] : true,
+				'key'           => $key,
+				'type'          => $type,
+				'products'      => $products,
+				'layout'        => $layout,
+				'placement'     => $placement,
+				'heading'       => $heading,
+				'cardDir'       => $card_dir,
+				'listDir'       => $list_dir,
+				'columns'       => $columns,
+				'slidesDesktop' => $slides_d,
+				'slidesMobile'  => $slides_m,
+				'showImage'     => array_key_exists( 'showImage', $b )  ? (bool) $b['showImage']  : true,
+				'showDesc'      => array_key_exists( 'showDesc', $b )   ? (bool) $b['showDesc']   : true,
+				'showPrice'     => array_key_exists( 'showPrice', $b )  ? (bool) $b['showPrice']  : true,
+				'showButton'    => array_key_exists( 'showButton', $b ) ? (bool) $b['showButton'] : true,
 			);
 		}
 		return $clean;
