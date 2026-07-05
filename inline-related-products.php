@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Inline Related Products
  * Description:       نمایش محصولات مرتبط ووکامرس داخل متن مقاله (کارت تکی / گرید / اسلایدر) با شورتکد یا درج خودکار بعد از هدینگ.
- * Version:           1.1.1
+ * Version:           2.0.0
  * Author:            Stockifa
  * Text Domain:       irp
  * Requires at least: 6.0
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'IRP_VERSION', '1.1.1' );
+define( 'IRP_VERSION', '2.0.0' );
 define( 'IRP_FILE', __FILE__ );
 define( 'IRP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'IRP_URL', plugin_dir_url( __FILE__ ) );

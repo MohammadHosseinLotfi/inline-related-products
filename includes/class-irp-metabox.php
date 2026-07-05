@@ -64,7 +64,12 @@ class IRP_Metabox {
 				'slider'        => __( 'اسلایدر', 'irp' ),
 				'grid'          => __( 'گرید/لیست', 'irp' ),
 				'ungroup'       => __( 'تفکیک گروه', 'irp' ),
-				'options'       => __( 'تنظیمات نمایش', 'irp' ),
+				'bpDesktop'     => __( 'دسکتاپ', 'irp' ),
+				'bpTablet'      => __( 'تبلت', 'irp' ),
+				'bpMobile'      => __( 'موبایل', 'irp' ),
+				'inheritHint'   => __( 'این تب از دسکتاپ ارث می‌برد؛ با تغییر هر گزینه فقط همین دستگاه override می‌شود.', 'irp' ),
+				'resetBp'       => __( 'بازنشانی به دسکتاپ', 'irp' ),
+				'mode'          => __( 'نحوه نمایش:', 'irp' ),
 				'cardDir'       => __( 'چیدمان کارت:', 'irp' ),
 				'cardH'         => __( 'افقی (عکس کنار متن)', 'irp' ),
 				'cardV'         => __( 'عمودی (عکس بالای متن)', 'irp' ),
@@ -72,8 +77,7 @@ class IRP_Metabox {
 				'listH'         => __( 'افقی (کنار هم)', 'irp' ),
 				'listV'         => __( 'عمودی (زیر هم)', 'irp' ),
 				'columns'       => __( 'تعداد در هر ردیف:', 'irp' ),
-				'slidesDesktop' => __( 'تعداد کارت در دسکتاپ:', 'irp' ),
-				'slidesMobile'  => __( 'تعداد کارت در موبایل:', 'irp' ),
+				'slides'        => __( 'تعداد کارت در هر نما:', 'irp' ),
 				'showImage'     => __( 'نمایش عکس', 'irp' ),
 				'showDesc'      => __( 'نمایش توضیح کوتاه', 'irp' ),
 				'showPrice'     => __( 'نمایش قیمت', 'irp' ),
@@ -197,7 +201,7 @@ class IRP_Metabox {
 		}
 	}
 
-	/** پاکسازی و اعتبارسنجی ساختار بلوک‌ها پیش از ذخیره. */
+	/** پاکسازی و اعتبارسنجی ساختار بلوک‌ها پیش از ذخیره (مدل سه‌حالته دستگاهی). */
 	private function sanitize_blocks( $blocks ) {
 		$clean = array();
 		if ( ! is_array( $blocks ) ) {
@@ -217,11 +221,6 @@ class IRP_Metabox {
 				$products = array( $products[0] );
 			}
 
-			$layout = 'card';
-			if ( 'group' === $type ) {
-				$layout = ( isset( $b['layout'] ) && 'grid' === $b['layout'] ) ? 'grid' : 'slider';
-			}
-
 			$placement = ( isset( $b['placement'] ) && 'auto' === $b['placement'] ) ? 'auto' : 'manual';
 			$heading   = isset( $b['heading'] ) ? absint( $b['heading'] ) : 0;
 			$key       = isset( $b['key'] ) ? sanitize_key( $b['key'] ) : '';
@@ -229,30 +228,82 @@ class IRP_Metabox {
 				$key = 'irp' . wp_generate_password( 6, false, false );
 			}
 
-			$card_dir = ( isset( $b['cardDir'] ) && 'v' === $b['cardDir'] ) ? 'v' : 'h';
-			$list_dir = ( isset( $b['listDir'] ) && 'v' === $b['listDir'] ) ? 'v' : 'h';
-			$columns  = isset( $b['columns'] ) ? min( 6, max( 1, absint( $b['columns'] ) ) ) : 2;
-			$slides_d = isset( $b['slidesDesktop'] ) ? min( 6, max( 1, absint( $b['slidesDesktop'] ) ) ) : 3;
-			$slides_m = isset( $b['slidesMobile'] ) ? min( 6, max( 1, absint( $b['slidesMobile'] ) ) ) : 1;
+			$b = $this->upgrade_block_shape( $b );
 
 			$clean[] = array(
-				'key'           => $key,
-				'type'          => $type,
-				'products'      => $products,
-				'layout'        => $layout,
-				'placement'     => $placement,
-				'heading'       => $heading,
-				'cardDir'       => $card_dir,
-				'listDir'       => $list_dir,
-				'columns'       => $columns,
-				'slidesDesktop' => $slides_d,
-				'slidesMobile'  => $slides_m,
-				'showImage'     => array_key_exists( 'showImage', $b )  ? (bool) $b['showImage']  : true,
-				'showDesc'      => array_key_exists( 'showDesc', $b )   ? (bool) $b['showDesc']   : true,
-				'showPrice'     => array_key_exists( 'showPrice', $b )  ? (bool) $b['showPrice']  : true,
-				'showButton'    => array_key_exists( 'showButton', $b ) ? (bool) $b['showButton'] : true,
+				'key'       => $key,
+				'type'      => $type,
+				'products'  => $products,
+				'placement' => $placement,
+				'heading'   => $heading,
+				'd'         => $this->sanitize_bp( isset( $b['d'] ) ? $b['d'] : array(), true ),
+				't'         => $this->sanitize_bp( isset( $b['t'] ) ? $b['t'] : array(), false ),
+				'm'         => $this->sanitize_bp( isset( $b['m'] ) ? $b['m'] : array(), false ),
 			);
 		}
 		return $clean;
+	}
+
+	/** تبدیل ساختار تختِ نسخه‌های قدیمی به مدل دستگاهی (d/t/m). */
+	private function upgrade_block_shape( $b ) {
+		if ( isset( $b['d'] ) && is_array( $b['d'] ) ) {
+			return $b;
+		}
+		$d = array(
+			'mode'       => ( isset( $b['layout'] ) && 'grid' === $b['layout'] ) ? 'grid' : 'slider',
+			'slides'     => isset( $b['slidesDesktop'] ) ? absint( $b['slidesDesktop'] ) : 3,
+			'columns'    => isset( $b['columns'] ) ? absint( $b['columns'] ) : 2,
+			'listDir'    => ( isset( $b['listDir'] ) && 'v' === $b['listDir'] ) ? 'v' : 'h',
+			'cardDir'    => ( isset( $b['cardDir'] ) && 'v' === $b['cardDir'] ) ? 'v' : 'h',
+			'showImage'  => array_key_exists( 'showImage', $b )  ? (bool) $b['showImage']  : true,
+			'showDesc'   => array_key_exists( 'showDesc', $b )   ? (bool) $b['showDesc']   : true,
+			'showPrice'  => array_key_exists( 'showPrice', $b )  ? (bool) $b['showPrice']  : true,
+			'showButton' => array_key_exists( 'showButton', $b ) ? (bool) $b['showButton'] : true,
+		);
+		$m = array();
+		if ( isset( $b['slidesMobile'] ) && absint( $b['slidesMobile'] ) !== $d['slides'] ) {
+			$m['slides'] = absint( $b['slidesMobile'] );
+		}
+		return array( 'd' => $d, 't' => array(), 'm' => $m );
+	}
+
+	/** پاکسازی تنظیمات یک بریک‌پوینت. پایه (base=true) همه‌ی کلیدها را پر می‌کند؛ override فقط کلیدهای موجود. */
+	private function sanitize_bp( $bp, $base ) {
+		$bp   = is_array( $bp ) ? $bp : array();
+		$out  = array();
+		$defs = array(
+			'mode'       => 'slider',
+			'slides'     => 3,
+			'columns'    => 2,
+			'listDir'    => 'h',
+			'cardDir'    => 'h',
+			'showImage'  => true,
+			'showDesc'   => true,
+			'showPrice'  => true,
+			'showButton' => true,
+		);
+		foreach ( $defs as $k => $def ) {
+			$has = array_key_exists( $k, $bp );
+			if ( ! $base && ! $has ) {
+				continue;
+			}
+			$val = $has ? $bp[ $k ] : $def;
+			switch ( $k ) {
+				case 'mode':
+					$out[ $k ] = ( 'grid' === $val ) ? 'grid' : 'slider';
+					break;
+				case 'listDir':
+				case 'cardDir':
+					$out[ $k ] = ( 'v' === $val ) ? 'v' : 'h';
+					break;
+				case 'slides':
+				case 'columns':
+					$out[ $k ] = min( 6, max( 1, absint( $val ) ) );
+					break;
+				default:
+					$out[ $k ] = (bool) $val;
+			}
+		}
+		return $out;
 	}
 }

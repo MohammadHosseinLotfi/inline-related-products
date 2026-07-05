@@ -28,7 +28,7 @@ class IRP_Frontend {
 		wp_enqueue_style( 'irp-frontend', IRP_URL . 'assets/frontend.css', array(), IRP_VERSION );
 
 		foreach ( $blocks as $b ) {
-			if ( 'group' === $b['type'] && 'slider' === $b['layout'] ) {
+			if ( 'group' === ( isset( $b['type'] ) ? $b['type'] : 'single' ) && $this->has_slider( $b ) ) {
 				wp_enqueue_script( 'irp-slider', IRP_URL . 'assets/slider.js', array(), IRP_VERSION, true );
 				break;
 			}
@@ -46,7 +46,7 @@ class IRP_Frontend {
 			return null;
 		}
 		foreach ( $this->get_blocks( $post->ID ) as $b ) {
-			if ( $b['key'] === $key ) {
+			if ( isset( $b['key'] ) && $b['key'] === $key ) {
 				return $b;
 			}
 		}
@@ -61,7 +61,7 @@ class IRP_Frontend {
 			return '';
 		}
 		$block = $this->find_block( $key );
-		if ( ! $block || 'auto' === $block['placement'] ) {
+		if ( ! $block || ( isset( $block['placement'] ) && 'auto' === $block['placement'] ) ) {
 			return '';
 		}
 		return $this->render_block( $block );
@@ -79,8 +79,8 @@ class IRP_Frontend {
 
 		$auto = array();
 		foreach ( $blocks as $b ) {
-			if ( 'auto' === $b['placement'] && $b['heading'] > 0 ) {
-				$auto[ $b['heading'] ][] = $b;
+			if ( isset( $b['placement'] ) && 'auto' === $b['placement'] && ! empty( $b['heading'] ) && $b['heading'] > 0 ) {
+				$auto[ (int) $b['heading'] ][] = $b;
 			}
 		}
 		if ( empty( $auto ) ) {
@@ -106,98 +106,230 @@ class IRP_Frontend {
 	}
 
 	public function render_block( $block ) {
-		$opts = $this->block_opts( $block );
-		if ( 'group' === $block['type'] ) {
-			return 'slider' === $block['layout']
-				? $this->render_slider( $block['products'], $opts )
-				: $this->render_grid( $block['products'], $opts );
+		$type = ( isset( $block['type'] ) && 'group' === $block['type'] ) ? 'group' : 'single';
+		if ( empty( $block['products'] ) || ! is_array( $block['products'] ) ) {
+			return '';
 		}
-		return $this->render_single( $block['products'][0], $opts );
-	}
+		$r    = $this->resolve( $block );
+		$key  = isset( $block['key'] ) ? sanitize_html_class( $block['key'] ) : 'x';
+		$bcls = 'irp-b-' . $key;
 
-	/** استخراج و نرمال‌سازی گزینه‌های نمایشی هر بلوک با مقادیر پیش‌فرض امن. */
-	private function block_opts( $block ) {
-		$b = wp_parse_args( is_array( $block ) ? $block : array(), array(
-			'cardDir'       => 'h',
-			'listDir'       => 'h',
-			'columns'       => 2,
-			'slidesDesktop' => 3,
-			'slidesMobile'  => 1,
-			'showImage'     => true,
-			'showDesc'      => true,
-			'showPrice'     => true,
-			'showButton'    => true,
-		) );
-		return array(
-			'cardDir'       => 'v' === $b['cardDir'] ? 'v' : 'h',
-			'listDir'       => 'v' === $b['listDir'] ? 'v' : 'h',
-			'columns'       => min( 6, max( 1, (int) $b['columns'] ) ),
-			'slidesDesktop' => min( 6, max( 1, (int) $b['slidesDesktop'] ) ),
-			'slidesMobile'  => min( 6, max( 1, (int) $b['slidesMobile'] ) ),
-			'showImage'     => (bool) $b['showImage'],
-			'showDesc'      => (bool) $b['showDesc'],
-			'showPrice'     => (bool) $b['showPrice'],
-			'showButton'    => (bool) $b['showButton'],
+		// عناصری که در هیچ بریک‌پوینتی نمایش داده نمی‌شوند اصلاً وارد DOM نمی‌شوند.
+		$vis = array(
+			'image'  => $r['d']['showImage']  || $r['t']['showImage']  || $r['m']['showImage'],
+			'desc'   => $r['d']['showDesc']   || $r['t']['showDesc']   || $r['m']['showDesc'],
+			'price'  => $r['d']['showPrice']  || $r['t']['showPrice']  || $r['m']['showPrice'],
+			'button' => $r['d']['showButton'] || $r['t']['showButton'] || $r['m']['showButton'],
 		);
+
+		$css = $this->block_css( $bcls, $type, $r, $vis );
+
+		if ( 'group' === $type ) {
+			$slider = $this->has_slider( $block );
+			$items  = '';
+			foreach ( $block['products'] as $id ) {
+				$card = $this->card_html( $id, $vis );
+				if ( $card ) {
+					$items .= '<li class="irp-list__item">' . $card . '</li>';
+				}
+			}
+			if ( '' === $items ) {
+				return '';
+			}
+			$out  = $css;
+			$out .= '<div class="irp-wrap irp-group ' . esc_attr( $bcls ) . '"' . ( $slider ? ' data-irp-slider' : '' ) . '>';
+			if ( $slider ) {
+				$prev = esc_attr__( 'قبلی', 'irp' );
+				$next = esc_attr__( 'بعدی', 'irp' );
+				// در RTL: «قبلی» به راست و «بعدی» به چپ اشاره می‌کند.
+				$out .= '<button type="button" class="irp-slider__nav irp-slider__prev" aria-label="' . $prev . '"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+			}
+			$out .= '<ul class="irp-list">' . $items . '</ul>';
+			if ( $slider ) {
+				$out .= '<button type="button" class="irp-slider__nav irp-slider__next" aria-label="' . $next . '"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+			}
+			$out .= '</div>';
+			return $out;
+		}
+
+		// کارت تکی
+		$card = $this->card_html( $block['products'][0], $vis );
+		if ( '' === $card ) {
+			return '';
+		}
+		return $css . '<div class="irp-wrap irp-single ' . esc_attr( $bcls ) . '">' . $card . '</div>';
 	}
 
-	private function render_single( $product_id, $opts ) {
+	private function bp_defaults() {
+		return array( 'mode' => 'slider', 'slides' => 3, 'columns' => 2, 'listDir' => 'h', 'cardDir' => 'h', 'showImage' => true, 'showDesc' => true, 'showPrice' => true, 'showButton' => true );
+	}
+
+	/** تبدیل ساختار تختِ قدیمی به مدل دستگاهی. */
+	private function upgrade( $block ) {
+		if ( isset( $block['d'] ) && is_array( $block['d'] ) ) {
+			return $block;
+		}
+		$d = array(
+			'mode'       => ( isset( $block['layout'] ) && 'grid' === $block['layout'] ) ? 'grid' : 'slider',
+			'slides'     => isset( $block['slidesDesktop'] ) ? (int) $block['slidesDesktop'] : 3,
+			'columns'    => isset( $block['columns'] ) ? (int) $block['columns'] : 2,
+			'listDir'    => ( isset( $block['listDir'] ) && 'v' === $block['listDir'] ) ? 'v' : 'h',
+			'cardDir'    => ( isset( $block['cardDir'] ) && 'v' === $block['cardDir'] ) ? 'v' : 'h',
+			'showImage'  => array_key_exists( 'showImage', $block )  ? (bool) $block['showImage']  : true,
+			'showDesc'   => array_key_exists( 'showDesc', $block )   ? (bool) $block['showDesc']   : true,
+			'showPrice'  => array_key_exists( 'showPrice', $block )  ? (bool) $block['showPrice']  : true,
+			'showButton' => array_key_exists( 'showButton', $block ) ? (bool) $block['showButton'] : true,
+		);
+		$m = array();
+		if ( isset( $block['slidesMobile'] ) && (int) $block['slidesMobile'] !== $d['slides'] ) {
+			$m['slides'] = (int) $block['slidesMobile'];
+		}
+		return array( 'd' => $d, 't' => array(), 'm' => $m ) + $block;
+	}
+
+	/** ترکیب override‌های یک بریک‌پوینت روی مقادیر والد. */
+	private function clean_bp( $bp, $parent ) {
+		$bp  = is_array( $bp ) ? $bp : array();
+		$out = array();
+		foreach ( $parent as $k => $pv ) {
+			if ( ! array_key_exists( $k, $bp ) ) {
+				$out[ $k ] = $pv;
+				continue;
+			}
+			$v = $bp[ $k ];
+			switch ( $k ) {
+				case 'mode':
+					$out[ $k ] = ( 'grid' === $v ) ? 'grid' : 'slider';
+					break;
+				case 'listDir':
+				case 'cardDir':
+					$out[ $k ] = ( 'v' === $v ) ? 'v' : 'h';
+					break;
+				case 'slides':
+				case 'columns':
+					$out[ $k ] = min( 6, max( 1, (int) $v ) );
+					break;
+				default:
+					$out[ $k ] = (bool) $v;
+			}
+		}
+		return $out;
+	}
+
+	/** حل نهایی سه بریک‌پوینت با ارث‌بری m ← t ← d. */
+	private function resolve( $block ) {
+		$block = $this->upgrade( $block );
+		$d = $this->clean_bp( isset( $block['d'] ) ? $block['d'] : array(), $this->bp_defaults() );
+		$t = $this->clean_bp( isset( $block['t'] ) ? $block['t'] : array(), $d );
+		$m = $this->clean_bp( isset( $block['m'] ) ? $block['m'] : array(), $t );
+		return array( 'd' => $d, 't' => $t, 'm' => $m );
+	}
+
+	/** آیا در هر یک از بریک‌پوینت‌ها حالت اسلایدر فعال است؟ */
+	private function has_slider( $block ) {
+		$r = $this->resolve( $block );
+		return 'slider' === $r['d']['mode'] || 'slider' === $r['t']['mode'] || 'slider' === $r['m']['mode'];
+	}
+
+	/** CSS چیدمان لیست/آیتم برای یک بریک‌پوینت. */
+	private function css_list( $sel, $bp ) {
+		if ( ! is_array( $bp ) ) {
+			return '';
+		}
+		if ( 'slider' === $bp['mode'] ) {
+			$s = max( 1, (int) $bp['slides'] );
+			return $sel . ' .irp-list{display:flex;grid-template-columns:none;overflow-x:auto}'
+				. $sel . ' .irp-list__item{flex:0 0 calc((100% - (' . $s . ' - 1) * 14px) / ' . $s . ');max-width:100%}';
+		}
+		$cols = ( 'v' === $bp['listDir'] ) ? 1 : max( 1, (int) $bp['columns'] );
+		return $sel . ' .irp-list{display:grid;grid-template-columns:repeat(' . $cols . ',minmax(0,1fr));overflow-x:visible}'
+			. $sel . ' .irp-list__item{flex:0 0 auto;max-width:none}';
+	}
+
+	/** CSS جهت کارت (افقی/عمودی) و مدیا. */
+	private function css_card( $sel, $bp ) {
+		if ( ! is_array( $bp ) ) {
+			return '';
+		}
+		if ( 'v' === $bp['cardDir'] ) {
+			return $sel . ' .irp-card{flex-direction:column}'
+				. $sel . ' .irp-card__media{flex:0 0 auto;width:100%;height:auto;aspect-ratio:4/3}';
+		}
+		return $sel . ' .irp-card{flex-direction:row}'
+			. $sel . ' .irp-card__media{flex:0 0 clamp(88px,26vw,118px);width:clamp(88px,26vw,118px);height:auto;aspect-ratio:1}';
+	}
+
+	/** CSS یک لایه (tier): فقط قواعدی که با والد فرق دارند. */
+	private function tier_css( $sel, $type, $bp, $parent, $vis ) {
+		$out   = '';
+		$first = ( null === $parent );
+
+		if ( 'group' === $type ) {
+			$list = $this->css_list( $sel, $bp );
+			if ( $first || $list !== $this->css_list( $sel, $parent ) ) {
+				$out .= $list;
+			}
+			$nav  = $sel . ' .irp-slider__nav{display:' . ( 'slider' === $bp['mode'] ? 'flex' : 'none' ) . '}';
+			$pnav = $first ? '' : $sel . ' .irp-slider__nav{display:' . ( 'slider' === $parent['mode'] ? 'flex' : 'none' ) . '}';
+			if ( $first || $nav !== $pnav ) {
+				$out .= $nav;
+			}
+		}
+
+		$card = $this->css_card( $sel, $bp );
+		if ( $first || $card !== $this->css_card( $sel, $parent ) ) {
+			$out .= $card;
+		}
+
+		$map = array(
+			array( 'opt' => 'showImage', 'vis' => 'image', 'sel' => ' .irp-card__media', 'show' => 'display:block' ),
+			array( 'opt' => 'showDesc', 'vis' => 'desc', 'sel' => ' .irp-card__desc', 'show' => 'display:-webkit-box' ),
+			array( 'opt' => 'showPrice', 'vis' => 'price', 'sel' => ' .irp-card__price', 'show' => 'display:flex' ),
+			array( 'opt' => 'showButton', 'vis' => 'button', 'sel' => ' .irp-card__btn', 'show' => 'display:inline-flex' ),
+		);
+		foreach ( $map as $c ) {
+			if ( empty( $vis[ $c['vis'] ] ) ) {
+				continue;
+			}
+			$cur = $sel . $c['sel'] . '{' . ( $bp[ $c['opt'] ] ? $c['show'] : 'display:none' ) . '}';
+			$par = $first ? '' : $sel . $c['sel'] . '{' . ( $parent[ $c['opt'] ] ? $c['show'] : 'display:none' ) . '}';
+			if ( $first || $cur !== $par ) {
+				$out .= $cur;
+			}
+		}
+
+		return $out;
+	}
+
+	/** ساخت بلوک <style> اسکوپ‌شده با سه لایه‌ی دسکتاپ/تبلت/موبایل. */
+	private function block_css( $bcls, $type, $r, $vis ) {
+		$sel = '.' . $bcls;
+		$css = $this->tier_css( $sel, $type, $r['d'], null, $vis );
+		$t   = $this->tier_css( $sel, $type, $r['t'], $r['d'], $vis );
+		if ( '' !== $t ) {
+			$css .= '@media (max-width:1024px){' . $t . '}';
+		}
+		$m = $this->tier_css( $sel, $type, $r['m'], $r['t'], $vis );
+		if ( '' !== $m ) {
+			$css .= '@media (max-width:600px){' . $m . '}';
+		}
+		if ( '' === $css ) {
+			return '';
+		}
+		return '<style>' . $css . '</style>';
+	}
+
+	/** مارکآپ کارت محصول. عناصری که در هیچ دستگاهی دیده نمی‌شوند ($vis) اصلاً رندر نمی‌شوند؛ نمایش/مخفی در هر بریک‌پوینت را CSS درون‌خطی بلوک کنترل می‌کند. */
+	private function card_html( $product_id, $vis ) {
 		$product = wc_get_product( $product_id );
 		if ( ! $product || 'publish' !== $product->get_status() ) {
 			return '';
 		}
-		return '<div class="irp-wrap irp-single">' . $this->card_html( $product, $opts ) . '</div>';
-	}
-
-	private function render_grid( $ids, $opts ) {
-		$cards = '';
-		foreach ( $ids as $id ) {
-			$p = wc_get_product( $id );
-			if ( ! $p || 'publish' !== $p->get_status() ) {
-				continue;
-			}
-			$cards .= '<li class="irp-grid__item">' . $this->card_html( $p, $opts ) . '</li>';
-		}
-		if ( ! $cards ) {
-			return '';
-		}
-		$stack = 'v' === $opts['listDir'];
-		$cls   = 'irp-grid' . ( $stack ? ' irp-grid--stack' : '' );
-		$style = $stack ? '' : ' style="--irp-cols:' . (int) $opts['columns'] . '"';
-		return '<div class="irp-wrap irp-group"><ul class="' . $cls . '"' . $style . '>' . $cards . '</ul></div>';
-	}
-
-	private function render_slider( $ids, $opts ) {
-		$slides = '';
-		foreach ( $ids as $id ) {
-			$p = wc_get_product( $id );
-			if ( ! $p || 'publish' !== $p->get_status() ) {
-				continue;
-			}
-			$slides .= '<li class="irp-slider__slide">' . $this->card_html( $p, $opts ) . '</li>';
-		}
-		if ( ! $slides ) {
-			return '';
-		}
-		$prev  = esc_attr__( 'قبلی', 'irp' );
-		$next  = esc_attr__( 'بعدی', 'irp' );
-		$style = sprintf( '--irp-slides-d:%d;--irp-slides-m:%d', (int) $opts['slidesDesktop'], (int) $opts['slidesMobile'] );
-		return '<div class="irp-wrap irp-group irp-slider" data-irp-slider style="' . esc_attr( $style ) . '">'
-			. '<button type="button" class="irp-slider__nav irp-slider__prev" aria-label="' . $prev . '"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
-			. '<ul class="irp-slider__track">' . $slides . '</ul>'
-			. '<button type="button" class="irp-slider__nav irp-slider__next" aria-label="' . $next . '"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
-			. '</div>';
-	}
-
-	/** مارکآپ کارت محصول با گزینه‌های نمایشی (عکس/توضیح/قیمت/دکمه و جهت کارت). */
-	private function card_html( $product, $opts ) {
-		$url      = get_permalink( $product->get_id() );
-		$title    = $product->get_name();
-		$vertical = 'v' === $opts['cardDir'];
-		$card_cls = 'irp-card' . ( $vertical ? ' irp-card--v' : '' );
+		$url   = get_permalink( $product->get_id() );
+		$title = $product->get_name();
 
 		$media = '';
-		if ( $opts['showImage'] ) {
+		if ( ! empty( $vis['image'] ) ) {
 			$img   = $product->get_image( 'woocommerce_thumbnail', array(
 				'class'   => 'irp-img',
 				'loading' => 'lazy',
@@ -207,7 +339,7 @@ class IRP_Frontend {
 		}
 
 		$desc = '';
-		if ( $opts['showDesc'] ) {
+		if ( ! empty( $vis['desc'] ) ) {
 			$raw_desc = $product->get_short_description();
 			if ( ! $raw_desc ) {
 				$raw_desc = $product->get_description();
@@ -215,12 +347,13 @@ class IRP_Frontend {
 			$desc = $raw_desc ? wp_trim_words( wp_strip_all_tags( $raw_desc ), 18, '…' ) : '';
 		}
 
-		$price       = $opts['showPrice'] ? $product->get_price_html() : '';
-		$show_footer = ( '' !== $price ) || $opts['showButton'];
+		$price       = ! empty( $vis['price'] ) ? $product->get_price_html() : '';
+		$show_button = ! empty( $vis['button'] );
+		$show_footer = ( '' !== $price ) || $show_button;
 
 		ob_start();
 		?>
-		<article class="<?php echo esc_attr( $card_cls ); ?>">
+		<article class="irp-card">
 			<?php echo $media; // خروجی get_image توسط ووکامرس escape می‌شود ?>
 			<div class="irp-card__body">
 				<div class="irp-card__title"><a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( $title ); ?></a></div>
@@ -232,7 +365,7 @@ class IRP_Frontend {
 						<?php if ( $price ) : ?>
 							<div class="irp-card__price"><?php echo wp_kses_post( $price ); ?></div>
 						<?php endif; ?>
-						<?php if ( $opts['showButton'] ) : ?>
+						<?php if ( $show_button ) : ?>
 							<a class="irp-card__btn" href="<?php echo esc_url( $url ); ?>"><?php echo esc_html__( 'مشاهده و خرید', 'irp' ); ?></a>
 						<?php endif; ?>
 					</div>

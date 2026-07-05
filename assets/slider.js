@@ -2,7 +2,7 @@
   "use strict";
 
   function initSlider(root) {
-    var track = root.querySelector(".irp-slider__track");
+    var track = root.querySelector(".irp-list");
     var prev = root.querySelector(".irp-slider__prev");
     var next = root.querySelector(".irp-slider__next");
     if (!track) { return; }
