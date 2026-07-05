@@ -82,6 +82,12 @@ class IRP_Metabox {
 				'showDesc'      => __( 'نمایش توضیح کوتاه', 'irp' ),
 				'showPrice'     => __( 'نمایش قیمت', 'irp' ),
 				'showButton'    => __( 'نمایش دکمه خرید', 'irp' ),
+				'fonts'         => __( 'اندازه فونت (px):', 'irp' ),
+				'fsTitle'       => __( 'تیتر', 'irp' ),
+				'fsPrice'       => __( 'قیمت', 'irp' ),
+				'fsDel'         => __( 'قیمت خط‌خورده', 'irp' ),
+				'fsBtn'         => __( 'دکمه خرید', 'irp' ),
+				'fontDefault'   => __( 'پیش‌فرض', 'irp' ),
 				'empty'         => __( 'هنوز محصولی اضافه نشده است. از کادر بالا محصول جستجو و اضافه کنید.', 'irp' ),
 			),
 		) );
@@ -281,6 +287,10 @@ class IRP_Metabox {
 			'showDesc'   => true,
 			'showPrice'  => true,
 			'showButton' => true,
+			'fsTitle'    => 0,
+			'fsPrice'    => 0,
+			'fsDel'      => 0,
+			'fsBtn'      => 0,
 		);
 		foreach ( $defs as $k => $def ) {
 			$has = array_key_exists( $k, $bp );
@@ -299,6 +309,13 @@ class IRP_Metabox {
 				case 'slides':
 				case 'columns':
 					$out[ $k ] = min( 6, max( 1, absint( $val ) ) );
+					break;
+				case 'fsTitle':
+				case 'fsPrice':
+				case 'fsDel':
+				case 'fsBtn':
+					$n = absint( $val );
+					$out[ $k ] = $n ? min( 60, max( 10, $n ) ) : 0;
 					break;
 				default:
 					$out[ $k ] = (bool) $val;

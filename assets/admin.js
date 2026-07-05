@@ -45,9 +45,10 @@
   function isUsed(id) { return blocks.some(function (b) { return b.products.indexOf(id) !== -1; }); }
   function pinfo(id) { return cache[id] || { title: "#" + id, thumb: "", price: "" }; }
   function bpDefaults() {
-    return { mode: "slider", slides: 3, columns: 2, listDir: "h", cardDir: "h", showImage: true, showDesc: true, showPrice: true, showButton: true };
+    return { mode: "slider", slides: 3, columns: 2, listDir: "h", cardDir: "h", showImage: true, showDesc: true, showPrice: true, showButton: true, fsTitle: 0, fsPrice: 0, fsDel: 0, fsBtn: 0 };
   }
   function clampNum(v, def) { var n = parseInt(v, 10); if (isNaN(n)) { n = def; } return Math.min(6, Math.max(1, n)); }
+  function clampFont(v) { var n = parseInt(v, 10); if (isNaN(n) || n <= 0) { return 0; } return Math.min(60, Math.max(10, n)); }
 
   // تضمین ساختار دستگاهی d/t/m روی هر بلوک (شامل ارتقای بلوک‌های تختِ قدیمی).
   function migrate(b) {
@@ -218,6 +219,11 @@
     return '<div class="irp-opts__row"><label class="irp-lbl">' + esc(label) + "</label>" +
       '<input type="number" min="1" max="6" step="1" class="irp-field irp-num" data-key="' + b.key + '" data-bp="' + bp + '" data-opt="' + key + '" value="' + clampNum(eff(b, bp, key), key === "slides" ? 3 : 2) + '"></div>';
   }
+  function fontRow(b, bp, key, label) {
+    var v = eff(b, bp, key) || 0;
+    return '<div class="irp-opts__row"><label class="irp-lbl">' + esc(label) + "</label>" +
+      '<input type="number" min="10" max="60" step="1" class="irp-field irp-font" data-key="' + b.key + '" data-bp="' + bp + '" data-opt="' + key + '" value="' + (v > 0 ? v : "") + '" placeholder="' + esc(i18n.fontDefault) + '"></div>';
+  }
 
   function tabPanel(b, bp) {
     var html = '<div class="irp-panel">';
@@ -236,6 +242,11 @@
         if (eff(b, bp, "listDir") !== "v") { html += numRow(b, bp, "columns", i18n.columns); }
       }
     }
+    html += '<div class="irp-fonts"><div class="irp-opts__title">' + esc(i18n.fonts) + "</div>" +
+      fontRow(b, bp, "fsTitle", i18n.fsTitle) +
+      fontRow(b, bp, "fsPrice", i18n.fsPrice) +
+      fontRow(b, bp, "fsDel", i18n.fsDel) +
+      fontRow(b, bp, "fsBtn", i18n.fsBtn) + "</div>";
     if (bp !== "d") {
       html += '<div class="irp-panel__note">' + esc(i18n.inheritHint);
       if (hasOverrides(b, bp)) {
@@ -316,6 +327,12 @@
     else if (t.classList.contains("irp-toggle")) { setVal(b, bp, t.getAttribute("data-opt"), t.checked); render(); }
     else if (t.classList.contains("irp-opt-select")) { setVal(b, bp, t.getAttribute("data-opt"), t.value); render(); }
     else if (t.classList.contains("irp-num")) { setVal(b, bp, t.getAttribute("data-opt"), clampNum(t.value, t.getAttribute("data-opt") === "slides" ? 3 : 2)); render(); }
+    else if (t.classList.contains("irp-font")) {
+      var fk = t.getAttribute("data-opt");
+      var fv = clampFont(t.value);
+      if (fv === 0 && bp !== "d") { delete b[bp][fk]; } else { setVal(b, bp, fk, fv); }
+      render();
+    }
   });
 
   list.addEventListener("click", function (e) {

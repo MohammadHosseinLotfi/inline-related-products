@@ -10,16 +10,16 @@
 .irp-card__title a:hover { color: #0b64d6; }
 .irp-card__desc { font-size: .85rem; line-height: 1.75; color: #6b6b77; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .irp-card__footer { margin-top: auto; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; }
-.irp-card__price { order: 2; display: flex; flex-direction: column; line-height: 1.35; }
+.irp-card__price { order: 2; display: flex; flex-direction: column; line-height: 1.35; font-size: 1.05rem; }
 .irp-card__price del { font-size: .78rem; color: #9a9aa6; text-decoration: line-through; text-align: left; }
-.irp-card__price ins { text-decoration: none; font-weight: 800; font-size: 1.05rem; color: #12121a; }
+.irp-card__price ins { text-decoration: none; font-weight: 800; font-size: 1em; color: #12121a; }
 .irp-card__price .amount, .irp-card__price bdi { white-space: nowrap; }
 .irp-card__btn { order: 1; align-self: flex-end; flex: 0 0 auto; font-size: .82rem; font-weight: 700; line-height: 1; padding: 9px 15px; border-radius: 9px; background: #0b64d6; color: #fff; text-decoration: none; white-space: nowrap; transition: background .15s; }
 .irp-card__btn:hover { background: #0a55b6; color: #fff; }
 
 /* گروه — مارک‌آپ یکسان برای لیست/گرید/اسلایدر؛ چیدمان و نمایش/مخفی را CSS درون‌خطی هر بلوک تعیین می‌کند */
 .irp-group { position: relative; overflow-x: clip; }
-.irp-list { list-style: none; margin: 0; padding: 4px 2px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.irp-list { list-style: none; margin: 0; padding: 4px 2px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; direction: rtl; overflow-x: auto; scroll-snap-type: x proximity; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .irp-list::-webkit-scrollbar { display: none; }
 .irp-list__item { margin: 0; scroll-snap-align: start; max-width: 100%; }
 .irp-single .irp-card { height: auto; }

@@ -161,7 +161,7 @@ class IRP_Frontend {
 	}
 
 	private function bp_defaults() {
-		return array( 'mode' => 'slider', 'slides' => 3, 'columns' => 2, 'listDir' => 'h', 'cardDir' => 'h', 'showImage' => true, 'showDesc' => true, 'showPrice' => true, 'showButton' => true );
+		return array( 'mode' => 'slider', 'slides' => 3, 'columns' => 2, 'listDir' => 'h', 'cardDir' => 'h', 'showImage' => true, 'showDesc' => true, 'showPrice' => true, 'showButton' => true, 'fsTitle' => 0, 'fsPrice' => 0, 'fsDel' => 0, 'fsBtn' => 0 );
 	}
 
 	/** تبدیل ساختار تختِ قدیمی به مدل دستگاهی. */
@@ -208,6 +208,13 @@ class IRP_Frontend {
 				case 'slides':
 				case 'columns':
 					$out[ $k ] = min( 6, max( 1, (int) $v ) );
+					break;
+				case 'fsTitle':
+				case 'fsPrice':
+				case 'fsDel':
+				case 'fsBtn':
+					$n = (int) $v;
+					$out[ $k ] = $n ? min( 60, max( 10, $n ) ) : 0;
 					break;
 				default:
 					$out[ $k ] = (bool) $v;
@@ -294,6 +301,22 @@ class IRP_Frontend {
 			$cur = $sel . $c['sel'] . '{' . ( $bp[ $c['opt'] ] ? $c['show'] : 'display:none' ) . '}';
 			$par = $first ? '' : $sel . $c['sel'] . '{' . ( $parent[ $c['opt'] ] ? $c['show'] : 'display:none' ) . '}';
 			if ( $first || $cur !== $par ) {
+				$out .= $cur;
+			}
+		}
+
+		$fonts = array(
+			array( 'opt' => 'fsTitle', 'sel' => ' .irp-card__title' ),
+			array( 'opt' => 'fsPrice', 'sel' => ' .irp-card__price' ),
+			array( 'opt' => 'fsDel', 'sel' => ' .irp-card__price del' ),
+			array( 'opt' => 'fsBtn', 'sel' => ' .irp-card__btn' ),
+		);
+		foreach ( $fonts as $f ) {
+			$cv  = (int) $bp[ $f['opt'] ];
+			$cur = $cv > 0 ? $sel . $f['sel'] . '{font-size:' . $cv . 'px}' : '';
+			$pv  = $first ? 0 : (int) $parent[ $f['opt'] ];
+			$par = $pv > 0 ? $sel . $f['sel'] . '{font-size:' . $pv . 'px}' : '';
+			if ( '' !== $cur && $cur !== $par ) {
 				$out .= $cur;
 			}
 		}

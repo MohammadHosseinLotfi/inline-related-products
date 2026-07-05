@@ -45,7 +45,8 @@
 .irp-opts__grid { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 4px; }
 .irp-opt { font-size: 12px; color: #444; display: flex; align-items: center; gap: 5px; }
 .irp-opts__row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.irp-num { width: 72px; min-width: 0; padding: 4px 8px; border: 1px solid #dcdce3; border-radius: 6px; }
+.irp-num, .irp-font { width: 72px; min-width: 0; padding: 4px 8px; border: 1px solid #dcdce3; border-radius: 6px; }
+.irp-fonts { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #f0f0f4; }
 
 /* تب‌های دستگاهی (دسکتاپ/تبلت/موبایل) */
 .irp-tabswrap { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ececf2; }
